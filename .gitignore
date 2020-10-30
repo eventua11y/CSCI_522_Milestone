@@ -1,0 +1,8 @@
+.vs
+/build/
+/build-intermediate/
+/External/
+/GlobalConfig/
+/Python26/
+/Tools/
+/ParserLogs/
