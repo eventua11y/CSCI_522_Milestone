@@ -179,6 +179,8 @@ void Register(PE::Components::LuaEnvironment *pLuaEnv, PE::GlobalRegistry *pRegi
 					PE::Events::Event_KEY_S_HELD::InitializeAndRegister(pLuaEnv, pRegistry, setLuaMetaDataOnly);
 					PE::Events::Event_KEY_D_HELD::InitializeAndRegister(pLuaEnv, pRegistry, setLuaMetaDataOnly);
 					PE::Events::Event_KEY_W_HELD::InitializeAndRegister(pLuaEnv, pRegistry, setLuaMetaDataOnly);
+					PE::Events::Event_KEY_Q_HELD::InitializeAndRegister(pLuaEnv, pRegistry, setLuaMetaDataOnly);
+					PE::Events::Event_KEY_E_HELD::InitializeAndRegister(pLuaEnv, pRegistry, setLuaMetaDataOnly);
 					PE::Events::Event_KEY_PERIOD_HELD::InitializeAndRegister(pLuaEnv, pRegistry, setLuaMetaDataOnly);
 					PE::Events::Event_KEY_COMMA_HELD::InitializeAndRegister(pLuaEnv, pRegistry, setLuaMetaDataOnly);
 					PE::Events::Event_KEY_K_HELD::InitializeAndRegister(pLuaEnv, pRegistry, setLuaMetaDataOnly);

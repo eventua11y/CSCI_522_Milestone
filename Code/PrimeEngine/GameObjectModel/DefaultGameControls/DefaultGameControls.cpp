@@ -225,6 +225,31 @@ void DefaultGameControls::handleKeyboardDebugInputEvents(Event *pEvt)
 
 		m_pQueueManager->add(h, QT_GENERAL);
 	}
+
+	else if (Event_KEY_Q_HELD::GetClassId() == pEvt->getClassId())
+	{
+		Handle h("EVENT", sizeof(Event_FLY_CAMERA));
+		Event_FLY_CAMERA* flyCameraEvt = new(h) Event_FLY_CAMERA;
+
+		Vector3 relativeMovement(0.0f, -1.0f, 0.0f);
+
+		flyCameraEvt->m_relativeMove = relativeMovement * Debug_Fly_Speed * m_frameTime;
+
+		m_pQueueManager->add(h, QT_GENERAL);
+	}
+
+	else if (Event_KEY_E_HELD::GetClassId() == pEvt->getClassId())
+	{
+		Handle h("EVENT", sizeof(Event_FLY_CAMERA));
+		Event_FLY_CAMERA* flyCameraEvt = new(h) Event_FLY_CAMERA;
+
+		Vector3 relativeMovement(0.0f, 1.0f, 0.0f);
+
+		flyCameraEvt->m_relativeMove = relativeMovement * Debug_Fly_Speed * m_frameTime;
+
+		m_pQueueManager->add(h, QT_GENERAL);
+	}
+
 	else if (Event_KEY_LEFT_HELD::GetClassId() == pEvt->getClassId())
 	{
 

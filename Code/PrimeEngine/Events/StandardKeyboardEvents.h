@@ -34,6 +34,16 @@ struct Event_KEY_W_HELD : public Event {
 	virtual ~Event_KEY_W_HELD(){}
 };
 
+struct Event_KEY_Q_HELD : public Event {
+	PE_DECLARE_CLASS(Event_KEY_Q_HELD);
+	virtual ~Event_KEY_Q_HELD() {}
+};
+
+struct Event_KEY_E_HELD : public Event {
+	PE_DECLARE_CLASS(Event_KEY_E_HELD);
+	virtual ~Event_KEY_E_HELD() {}
+};
+
 struct Event_KEY_PERIOD_HELD : public Event {
 	PE_DECLARE_CLASS(Event_KEY_PERIOD_HELD);
 	virtual ~Event_KEY_PERIOD_HELD(){}
