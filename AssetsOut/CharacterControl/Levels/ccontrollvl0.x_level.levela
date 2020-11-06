@@ -28,6 +28,8 @@ LevelLoader.CreateGameObject("PEObject8_TspotRep",1.0, 0.0, 0.0, 0.0, -0.0, 0.00
 
 LevelLoader.CreateGameObject("PEObject12_pPlane1",1.0, 0.0, -0.0, 0.0, 0.0, 1.0, -0.0, 0.0, -0.0, -0.0, 1.0, 0.0, -8.326546, 0.0, -4.034357, 1.0, 'ccontrollvl0.x_PEObject12_pPlan.lua', 'CharacterControl',0x81a8b1c0, 0x1c5111e0, 0xa309001b, 0x213b583a)
 
+LevelLoader.CreateGameObject("PEObject47_mirror",-1.0, 0.0, 0.0, 0.0, 0.0, 1.0, -0.0, 0.0, -0.0, -0.0, -1.0, 0.0, 0.0, 0.0, -0.0, 1.0, 'ccontrollvl0.x_PEObject47_mirro.lua', 'CharacterControl',0x0a40944f, 0x1fdd11eb, 0xa0151420, 0x5e05dd47)
+
 LevelLoader.CreateGameObject("PEObject42_TspotRep",1.0, 0.0, 0.0, 0.0, -0.0, 0.0, 1.0, 0.0, -0.0, -1.0, 0.0, 0.0, 104.671377, 249.971079, 471.89208, 1.0, 'ccontrollvl0.x_PEObject42_Tspot.lua', 'CharacterControl',0x4434ae2e, 0x467411e2, 0x98f20025, 0xd3ac504f)
 
 LevelLoader.CreateGameObject("PEObject45_nazi_rep",1.0, 0.0, -0.0, 0.0, 0.0, 1.0, -0.0, 0.0, -0.0, -0.0, 1.0, 0.0, 199.107586, 0.0, -0.0, 1.0, 'ccontrollvl0.x_PEObject45_nazi_.lua', 'CharacterControl',0x2bda3070, 0x2bfc11e4, 0x9209b8e8, 0x560d92e3)
