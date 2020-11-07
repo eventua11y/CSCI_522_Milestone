@@ -60,7 +60,7 @@ float4 DetailedMesh_Shadowed_A_Glow_PS(DETAILED_MESH_SHADOWED_PS_IN pIn)
 		// retieve the specular color
 		float perPixelSpecular = sample(gSpecularMapSampler, iTexCoord, gSpecularMap).r; //Greyscale so pick first sample
 		perPixelSpecular *= 1.2f;//Artificially inflate specular values
-		defaultSurface.spec.r *= perPixelSpecular;
+		defaultSurface.spec.r *= perPixelSpecular;fCalcShadowFactor
 		defaultSurface.spec.g *= perPixelSpecular;
 		defaultSurface.spec.b *= perPixelSpecular;
 	}*/
