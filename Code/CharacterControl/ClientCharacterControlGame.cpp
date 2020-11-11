@@ -252,6 +252,11 @@ int ClientCharacterControlGame::initGame()
 #endif
 	//m_pContext->getLuaEnvironment()->runString("LevelLoader.loadLevel('char_highlight.x_level.levela', 'Basic')");
 
+	// load level
+	bool loadLevel = true;
+	if (loadLevel)
+		m_pContext->getLuaEnvironment()->runString("LevelLoader.loadLevel('ccontrollvl1.x_level.levela', 'CharacterControl')");
+
 	m_pContext->getGPUScreen()->AcquireRenderContextOwnership(m_pContext->m_gameThreadThreadOwnershipMask);
 
 	return 1; // 1 (true) = success. no errors. TODO: add error checking

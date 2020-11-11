@@ -1,0 +1,10 @@
+LevelLoader.CreateGameObject("PEObject3_pPlane1",1.0, 0.0, -0.0, 0.0, 0.0, 1.0, -0.0, 0.0, -0.0, -0.0, 1.0, 0.0, -8.326546, 0.0, -4.034357, 1.0, 'ccontrollvl1.x_PEObject3_pPlane.lua', 'CharacterControl',0x760e7e4f, 0x245a11eb, 0xb4831420, 0x5e05dd47)
+
+LevelLoader.CreateGameObject("PEObject0_mirror",-1.0, 0.0, 0.0, 0.0, 0.0, 1.0, -0.0, 0.0, -0.0, -0.0, -1.0, 0.0, 0.0, 0.0, -0.0, 1.0, 'ccontrollvl1.x_PEObject0_mirror.lua', 'CharacterControl',0xe66a084f, 0x245911eb, 0x8f301420, 0x5e05dd47)
+
+LevelLoader.CreateGameObject("PEObject2_football",1.0, 0.0, -0.0, 0.0, 0.0, 1.0, -0.0, 0.0, -0.0, -0.0, 1.0, 0.0, 0.0, 162.829341, 374.252072, 1.0, 'ccontrollvl1.x_PEObject2_footba.lua', 'CharacterControl',0x6b0a5d2e, 0x245a11eb, 0xa23b1420, 0x5e05dd47)
+
+LevelLoader.CreateGameObject("PEObject1_mirrorSurface",0.0, 0.0, 1.0, 0.0, 0.0, 0.552, -0.0, 0.0, -0.969, -0.0, 0.0, 0.0, 0.0, 47.734, 10.768, 1.0, 'ccontrollvl1.x_PEObject1_mirror.lua', 'CharacterControl',0x02d7b640, 0x245a11eb, 0x9b0f1420, 0x5e05dd47)
+
+LevelLoader.CreateGameObject("PEObject4_polySurface1",-1.0, 0.0, 0.0, 0.0, -0.0, 0.866025, -0.5, 0.0, -0.0, -0.5, -0.866025, 0.0, 0.0, 492.005127, 708.165099, 1.0, 'ccontrollvl1.x_PEObject4_polySu.lua', 'CharacterControl',0x879c0dde, 0x245a11eb, 0x980e1420, 0x5e05dd47)
+

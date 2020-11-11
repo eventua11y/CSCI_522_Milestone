@@ -9,7 +9,7 @@ args['textures']={
   {'COLOR', 'mirror.dds'},
 } -- end textures
 --notes overrides
-
+--args['technique']='Diffuse'
 --notes end
 
 end
