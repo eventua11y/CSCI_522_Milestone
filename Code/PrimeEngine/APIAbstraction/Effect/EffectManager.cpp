@@ -45,6 +45,8 @@ EffectManager::EffectManager(PE::GameContext &context, PE::MemoryArena arena)
 	, m_glowSeparatedTextureGPU(context, arena)
 	, m_2ndGlowTargetTextureGPU(context, arena)
 	, m_shadowMapDepthTexture(context, arena)
+	, m_2ndMirrorTargetTextureGPU(context, arena)
+	, m_3rdMirrorTargetTextureGPU(context, arena)
 	, m_frameBufferCopyTexture(context, arena)
 {
 	m_arena = arena; m_pContext = &context;
@@ -275,6 +277,12 @@ void EffectManager::setTextureAndDepthTextureRenderTargetForGlow()
 	m_pContext->getGPUScreen()->setRenderTargetsAndViewportWithDepth(m_hGlowTargetTextureGPU.getObject<TextureGPU>(), m_hGlowTargetTextureGPU.getObject<TextureGPU>(), true, true);
 	m_pCurRenderTarget = m_hGlowTargetTextureGPU.getObject<TextureGPU>();
 }
+
+void EffectManager::setTextureAndDepthTextureRenderTargetForMirror()
+{
+	m_pContext->getGPUScreen()->setRenderTargetsAndViewportWithDepth(m_hMirrorTargetTextureGPU.getObject<TextureGPU>(), m_hMirrorTargetTextureGPU.getObject<TextureGPU>(), true, true);
+	m_pCurRenderTarget = m_hGlowTargetTextureGPU.getObject<TextureGPU>();
+}
 void EffectManager::setTextureAndDepthTextureRenderTargetForDefaultRendering()
 {
 	// use device back buffer and depth
@@ -337,6 +345,20 @@ void EffectManager::drawFullScreenQuad()
 	objSa.unbindFromPipeline(&curEffect);
 
 	setTextureAction.unbindFromPipeline(&curEffect);
+}
+
+void EffectManager::drawMirrorSecondPass()
+{
+	/*Effect& curEffect = *m_hMirrorEffect.getObject<Effect>();
+
+	if (!curEffect.m_isReady)
+		return;
+
+	m_pContext->getGPUScreen()->setRenderTargetsAndViewportWithNoDepth(&m_glowSeparatedTextureGPU, true);*/
+}
+void EffectManager::drawMirrorThirdPass()
+{
+
 }
 
 // this function has to be called right after rendering scene into render target

@@ -80,6 +80,33 @@ namespace PE {
                 pDevice->SetRenderState( D3DRS_ZFUNC, D3DCMP_LESSEQUAL );
             else
                 pDevice->SetRenderState( D3DRS_ZFUNC, D3DCMP_ALWAYS);
+
+            if (StringOps::strcmp(pCurEffect->m_techName, "StdMesh_Mirror_Tech") == 0)
+            {
+                if (m_mirrorRenderState == E_PEMirrorRenderState::SECOND_PASS)
+                {
+                    // write 1 into stencil buffer
+                    pDevice->SetRenderState(D3DRS_STENCILENABLE, true);
+                    pDevice->SetRenderState(D3DRS_STENCILFUNC, D3DCMP_ALWAYS);
+                    pDevice->SetRenderState(D3DRS_STENCILREF, 0x1);
+                    pDevice->SetRenderState(D3DRS_STENCILMASK, 0xffffffff);
+                    pDevice->SetRenderState(D3DRS_STENCILWRITEMASK, 0xffffffff);
+                    pDevice->SetRenderState(D3DRS_STENCILZFAIL, D3DSTENCILOP_KEEP);
+                    pDevice->SetRenderState(D3DRS_STENCILFAIL, D3DSTENCILOP_KEEP);
+                    pDevice->SetRenderState(D3DRS_STENCILPASS, D3DSTENCILOP_REPLACE);
+
+                    // disable writes to the depth and back buffers
+                    pDevice->SetRenderState(D3DRS_ZWRITEENABLE, false);
+                    pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, true);
+                    pDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ZERO);
+                    pDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+                }
+                else if (m_mirrorRenderState == E_PEMirrorRenderState::THIRD_PASS)
+                {
+                    pDevice->SetRenderState(D3DRS_STENCILFUNC, D3DCMP_EQUAL);
+                    pDevice->SetRenderState(D3DRS_STENCILPASS, D3DSTENCILOP_KEEP);
+                }
+            }
         }
         
         #elif APIABSTRACTION_D3D11

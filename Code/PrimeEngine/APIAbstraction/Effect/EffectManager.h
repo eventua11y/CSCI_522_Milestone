@@ -72,6 +72,7 @@ struct EffectManager : public PE::PEAllocatableAndDefragmentable
 	}
 
 	void setTextureAndDepthTextureRenderTargetForGlow();
+	void setTextureAndDepthTextureRenderTargetForMirror();
 	void setTextureAndDepthTextureRenderTargetForDefaultRendering();
 
 	void set2ndGlowRenderTarget();
@@ -90,6 +91,10 @@ struct EffectManager : public PE::PEAllocatableAndDefragmentable
 	void drawMotionBlur();
 	void drawFrameBufferCopy();
 
+	void drawMirrorSecondPass();
+	void drawMirrorThirdPass();
+	
+
 	void debugDrawRenderTarget(bool drawGlowRenderTarget, bool drawSeparatedGlow, bool drawGlow1stPass, bool drawGlow2ndPass, bool drawShadowRenderTarget);
 
 public:
@@ -98,6 +103,10 @@ public:
 
 	// Member vars
 	StrToHandleMap m_map;
+
+	Handle m_hMirrorTargetTextureGPU;
+	TextureGPU m_2ndMirrorTargetTextureGPU;
+	TextureGPU m_3rdMirrorTargetTextureGPU;
 
 	TextureGPU m_glowSeparatedTextureGPU;
 	Handle m_hGlowTargetTextureGPU;
@@ -127,6 +136,8 @@ public:
 	Handle m_hGlowSeparationEffect;
 	Handle m_hMotionBlurEffect;
 	Handle m_hColoredMinimalMeshTech;
+
+	Handle m_hMirrorEffect;
 
 	Array<Handle> m_pixelShaderSubstitutes;
 #	if APIABSTRACTION_D3D11
