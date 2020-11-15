@@ -20,6 +20,11 @@
 #include "PrimeEngine/APIAbstraction/GPUBuffers/AnimSetBufferGPU.h"
 #include "PrimeEngine/APIAbstraction/Texture/GPUTextureManager.h"
 #include "PrimeEngine/Scene/DrawList.h"
+#include "PrimeEngine/Scene/RootSceneNode.h"
+#include "PrimeEngine/Scene/MeshInstance.h"
+#include "PrimeEngine/Scene/CameraSceneNode.h"
+#include "PrimeEngine/Scene/CameraManager.h"
+#include "PrimeEngine/APIAbstraction/GPUMaterial/GPUMaterialSet.h"
 
 // Sibling/Children includes
 #include "EffectManager.h"
@@ -45,8 +50,8 @@ EffectManager::EffectManager(PE::GameContext &context, PE::MemoryArena arena)
 	, m_glowSeparatedTextureGPU(context, arena)
 	, m_2ndGlowTargetTextureGPU(context, arena)
 	, m_shadowMapDepthTexture(context, arena)
-	, m_2ndMirrorTargetTextureGPU(context, arena)
-	, m_3rdMirrorTargetTextureGPU(context, arena)
+	, m_MirrorTargetTextureGPU(context, arena)
+	, m_ReflectionTargetTextureGPU(context, arena)
 	, m_frameBufferCopyTexture(context, arena)
 {
 	m_arena = arena; m_pContext = &context;
@@ -272,17 +277,25 @@ void EffectManager::endCurrentRenderTarget()
 	m_pCurRenderTarget = NULL;
 }
 
-void EffectManager::setTextureAndDepthTextureRenderTargetForGlow()
+void EffectManager::setTextureAndDepthTextureRenderTargetForGlow(bool clearTarget, bool clearZbuffer)
 {
-	m_pContext->getGPUScreen()->setRenderTargetsAndViewportWithDepth(m_hGlowTargetTextureGPU.getObject<TextureGPU>(), m_hGlowTargetTextureGPU.getObject<TextureGPU>(), true, true);
+	m_pContext->getGPUScreen()->setRenderTargetsAndViewportWithDepth(m_hGlowTargetTextureGPU.getObject<TextureGPU>(), m_hGlowTargetTextureGPU.getObject<TextureGPU>(), clearTarget, clearZbuffer);
 	m_pCurRenderTarget = m_hGlowTargetTextureGPU.getObject<TextureGPU>();
 }
 
 void EffectManager::setTextureAndDepthTextureRenderTargetForMirror()
 {
-	m_pContext->getGPUScreen()->setRenderTargetsAndViewportWithDepth(m_hMirrorTargetTextureGPU.getObject<TextureGPU>(), m_hMirrorTargetTextureGPU.getObject<TextureGPU>(), true, true);
-	m_pCurRenderTarget = m_hGlowTargetTextureGPU.getObject<TextureGPU>();
+	m_pContext->getGPUScreen()->setRenderTargetsAndViewportWithDepth(&m_MirrorTargetTextureGPU, &m_MirrorTargetTextureGPU, true, true);
+	m_pCurRenderTarget = &m_MirrorTargetTextureGPU;
 }
+
+void EffectManager::setTextureAndDepthTextureRenderTargetForReflection()
+{
+	m_pContext->getGPUScreen()->setRenderTargetsAndViewportWithDepth(&m_ReflectionTargetTextureGPU, &m_ReflectionTargetTextureGPU, true, true);
+	m_pCurRenderTarget = &m_ReflectionTargetTextureGPU;
+}
+
+
 void EffectManager::setTextureAndDepthTextureRenderTargetForDefaultRendering()
 {
 	// use device back buffer and depth
@@ -345,19 +358,6 @@ void EffectManager::drawFullScreenQuad()
 	objSa.unbindFromPipeline(&curEffect);
 
 	setTextureAction.unbindFromPipeline(&curEffect);
-}
-
-void EffectManager::drawMirrorSecondPass()
-{
-	/*Effect& curEffect = *m_hMirrorEffect.getObject<Effect>();
-
-	if (!curEffect.m_isReady)
-		return;
-
-	m_pContext->getGPUScreen()->setRenderTargetsAndViewportWithNoDepth(&m_glowSeparatedTextureGPU, true);*/
-}
-void EffectManager::drawMirrorThirdPass()
-{
 
 }
 
@@ -500,6 +500,124 @@ void EffectManager::drawSecondGlowPass()
 	setBlurTextureAction.unbindFromPipeline(&curEffect);
 	setTextureAction.unbindFromPipeline(&curEffect);
 	objSa.unbindFromPipeline(&curEffect);
+}
+
+void EffectManager::drawMirrorPass()
+{
+	
+
+
+
+}
+void EffectManager::drawReflectionPass()
+{
+	Effect& curEffect = *m_hReflectionEffect.getObject<Effect>();
+	if (!curEffect.m_isReady)
+		return;
+
+	EffectManager::Instance()->setTextureAndDepthTextureRenderTargetForGlow(false, false);
+
+	// find mesh
+	RootSceneNode* proot = RootSceneNode::Instance();
+	Mesh* pMesh = proot->GetMeshForEffect("StdMesh_Reflected_Tech");
+	if (!pMesh)
+		return;
+
+	// index buf
+	IndexBufferGPU* pibGPU = pMesh->m_hIndexBufferGPU.getObject<IndexBufferGPU>();
+	pibGPU->setAsCurrent();
+
+	// vertex buf
+	VertexBufferGPU* pvbGPU;
+	pvbGPU = pMesh->m_vertexBuffersGPUHs[0].getObject<VertexBufferGPU>();
+	pvbGPU->setAsCurrent(&curEffect);
+
+	// effect
+	
+	curEffect.setCurrent(pvbGPU);
+
+	// texture
+	GPUMaterialSet* pGpuMatSet = pMesh->m_hMaterialSetGPU.getObject<GPUMaterialSet>();
+	PE::Handle hSV("SA_Bind_Resource", sizeof(SA_Bind_Resource));
+	SA_Bind_Resource* pSetTextureAction = new(hSV) SA_Bind_Resource(*m_pContext, m_arena);
+	for (int i = 0; i < 1/*pGpuMatSet->m_materials.m_size*/; i++)
+	{
+		GPUMaterial& curMat = pGpuMatSet->m_materials[i];
+		for (PrimitiveTypes::UInt32 itex = 0; itex < curMat.m_textures.m_size; itex++)
+		{
+
+			
+			// create object referenced by Handle in DrawList
+			// this handle will be released on end of draw call, os no need to worry about realeasing this object
+			
+
+			//SA_Bind_Resource *pSetTextureAction;
+			TextureGPU& curTex = *curMat.m_textures[itex].getObject<TextureGPU>();
+			pSetTextureAction->set(
+				DIFFUSE_TEXTURE_2D_SAMPLER_SLOT,
+				curTex.m_samplerState,
+#if APIABSTRACTION_D3D9
+				curTex.m_pTexture,
+#elif APIABSTRACTION_D3D11
+				curTex.m_pShaderResourceView,
+#elif APIABSTRACTION_OGL
+				curTex.m_texture,
+#elif PE_PLAT_IS_PSVITA
+				curTex.m_texture,
+#endif
+				curTex.m_name
+			);
+			pSetTextureAction->bindToPipeline(&curEffect);
+		}
+	}
+	
+
+	//TextureGPU* t = m_hGlowTargetTextureGPU.getObject<TextureGPU>();
+	//PE::SA_Bind_Resource setTextureAction(*m_pContext, m_arena, DIFFUSE_TEXTURE_2D_SAMPLER_SLOT, t->m_samplerState, API_CHOOSE_DX11_DX9_OGL(t->m_pShaderResourceView, t->m_pTexture, t->m_texture));
+	//setTextureAction.bindToPipeline(&curEffect);
+
+	// Per Object
+
+	PE::SetPerObjectConstantsShaderAction objSa;
+
+	MeshInstance* pInst = pMesh->m_instances[0].getObject<MeshInstance>();
+
+	//Handle& hsvPerObject = Handle("RAW_DATA", sizeof(SetPerObjectConstantsShaderAction));
+	//SetPerObjectConstantsShaderAction* psvPerObject = new(hsvPerObject) SetPerObjectConstantsShaderAction();
+
+	//memset(&psvPerObject->m_data, 0, sizeof(SetPerObjectConstantsShaderAction::Data));
+
+	Handle hParentSN = pInst->getFirstParentByType<SceneNode>();
+
+	Matrix4x4& m_worldTransform = hParentSN.getObject<SceneNode>()->m_worldTransform;
+
+	Matrix4x4 worldMatrix = hParentSN.getObject<SceneNode>()->m_worldTransform;
+
+	CameraSceneNode* pcam = CameraManager::Instance()->getActiveCamera()->getCamSceneNode();
+
+	Matrix4x4 evtProjectionViewWorldMatrix = pcam->m_viewToProjectedTransform * pcam->m_worldToViewTransform;
+
+	Vector3 worldPos;
+	worldPos = worldMatrix.getPos();
+	worldMatrix.setPos(Vector3(worldPos.m_x, worldPos.m_y, -worldPos.m_z));
+
+	objSa.m_data.gWVP = evtProjectionViewWorldMatrix * worldMatrix; // these values are only used by non-instance version
+	objSa.m_data.gWVPInverse = objSa.m_data.gWVP.inverse(); // these values are only used by non-instance version
+
+	objSa.m_data.gW = worldMatrix;  // these values are only used by non-instance version
+	objSa.bindToPipeline(&curEffect);
+
+	//SetPerMaterialConstantsShaderAction* pSV = new(hSV) SetPerMaterialConstantsShaderAction();
+
+	//pSV->m_data.m_diffuse = m_diffuse;
+	//pSV->m_data.gxyzVSpecular_w.asVector3Ref() = m_specular;
+	//pSV->m_data.gxyzVEmissive_wVShininess.asVector3Ref() = m_emissive;
+	//pSV->m_data.gxyzVEmissive_wVShininess.m_w = m_shininess;
+	//pSV->m_data.m_xHasNrm_yHasSpec_zHasGlow_wHasDiff = m_xHasNrm_yHasSpec_zHasGlow_wHasDiff;
+	pibGPU->draw(1, 0);
+
+	pSetTextureAction->unbindFromPipeline(&curEffect);
+	
 }
 
 void EffectManager::drawMotionBlur()

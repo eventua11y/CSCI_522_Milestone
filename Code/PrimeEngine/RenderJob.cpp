@@ -116,8 +116,8 @@ void runDrawThreadSingleFrame(PE::GameContext &ctx)
 	if (!disableScreenSpaceEffects)
     {
 		// set render target: GlowTargetTextureGPU
-		//EffectManager::Instance()->setTextureAndDepthTextureRenderTargetForMirror();
-		EffectManager::Instance()->setTextureAndDepthTextureRenderTargetForGlow();
+		//EffectManager::Instance()->setTextureAndDepthTextureRenderTargetForReflection();
+		EffectManager::Instance()->setTextureAndDepthTextureRenderTargetForGlow(true, true);
          
         assert(DrawList::InstanceReadOnly() != DrawList::Instance());
         DrawList::InstanceReadOnly()->optimize();
@@ -138,6 +138,18 @@ void runDrawThreadSingleFrame(PE::GameContext &ctx)
 		#elif APIABSTRACTION_D3D11
 			pDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		#endif
+
+		bool renderMirror = true;
+		if (renderMirror)
+		{
+			// mirror pass
+			//EffectManager::Instance()->drawMirrorPass();
+			//EffectManager::Instance()->endCurrentRenderTarget();
+
+			// reflection pass
+			EffectManager::Instance()->drawReflectionPass();
+			EffectManager::Instance()->endCurrentRenderTarget();
+		}
 
 		// sets render target to separated glow texture
 		EffectManager::Instance()->drawGlowSeparationPass();
@@ -161,18 +173,6 @@ void runDrawThreadSingleFrame(PE::GameContext &ctx)
 			//draw back into main back buffer render target
 			EffectManager::Instance()->drawMotionBlur();
 			EffectManager::Instance()->endCurrentRenderTarget();
-
-			bool renderMirror = true;
-			if (renderMirror)
-			{
-				// second pass
-				EffectManager::Instance()->drawMirrorSecondPass();
-				EffectManager::Instance()->endCurrentRenderTarget();
-
-				// third pass
-				EffectManager::Instance()->drawMirrorThirdPass();
-				EffectManager::Instance()->endCurrentRenderTarget();
-			}
 		}
 		else
 		{

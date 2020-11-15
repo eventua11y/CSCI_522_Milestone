@@ -13,6 +13,7 @@
 #include "../Events/Component.h"
 #include "../Utils/Array/Array.h"
 #include "PrimeEngine/APIAbstraction/Effect/Effect.h"
+#include "PrimeEngine/Scene/Mesh.h"
 
 
 // Sibling/Children includes
@@ -53,9 +54,34 @@ struct RootSceneNode : public SceneNode
 	static void SetTitleAsCurrent(){ s_hCurInstance = s_hTitleInstance; }
 	static void SetGameAsCurrent() { s_hCurInstance = s_hInstance; }
 	static bool TitleIsCurrent() { return s_hCurInstance == s_hTitleInstance;}
-
 	static void SetInstance(Handle h){s_hInstance = h;}
-	private:
+	static Mesh* GetMeshForEffect(const char* effectName)
+	{
+		RootSceneNode* root = Instance();
+		PE::Handle* pHC = root->m_components.getFirstPtr();
+
+		PrimitiveTypes::UInt32 i;
+		for (i = 0; i < root->m_components.m_size; i++, pHC++) // fast array traversal (increasing ptr)
+		{
+			Component* pC = (*pHC).getObject<Component>();
+
+			if (pC->isInstanceOf<Mesh>())
+			{
+				Mesh* pMesh = (Mesh*)(pC);
+				int j;
+				for (j = 0; j < pMesh->m_effects.m_size; j++)
+				{
+					Effect* pEffect = pMesh->m_effects[j][0].getObject<Effect>();
+					if (pEffect != nullptr && StringOps::strcmp(pEffect->m_techName, effectName) == 0)
+					{
+						return pMesh;
+					}
+				}
+			}
+		}
+		return nullptr;
+	}
+private:
 		static Handle s_hInstance;
 		static Handle s_hTitleInstance;
 		static Handle s_hCurInstance;

@@ -114,5 +114,8 @@ void RootSceneNode::do_GATHER_DRAWCALLS(Events::Event *pEvt)
 		}
 	}
 }
+
+//Mesh* RootSceneNode::GetMeshForEffect(const char* effectName)
+
 }; // namespace Components
 }; // namespace PE

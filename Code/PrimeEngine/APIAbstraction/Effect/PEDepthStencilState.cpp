@@ -83,7 +83,7 @@ namespace PE {
 
             if (StringOps::strcmp(pCurEffect->m_techName, "StdMesh_Mirror_Tech") == 0)
             {
-                if (m_mirrorRenderState == E_PEMirrorRenderState::SECOND_PASS)
+                if (m_RenderState == E_PERenderState::THIRD_PASS)
                 {
                     // write 1 into stencil buffer
                     pDevice->SetRenderState(D3DRS_STENCILENABLE, true);
@@ -101,11 +101,16 @@ namespace PE {
                     pDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ZERO);
                     pDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
                 }
-                else if (m_mirrorRenderState == E_PEMirrorRenderState::THIRD_PASS)
+            }
+
+            if (StringOps::strcmp(pCurEffect->m_techName, "StdMesh_Reflected_Tech") == 0)
+            {
+                if (m_RenderState == E_PERenderState::THIRD_PASS)
                 {
                     pDevice->SetRenderState(D3DRS_STENCILFUNC, D3DCMP_EQUAL);
                     pDevice->SetRenderState(D3DRS_STENCILPASS, D3DSTENCILOP_KEEP);
                 }
+
             }
         }
         

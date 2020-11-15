@@ -25,8 +25,8 @@ namespace PE {
 		TextureGPU* pMirrorTargetTextureGPU = new(m_hMirrorTargetTextureGPU) TextureGPU(*m_pContext, m_arena);
 		pMirrorTargetTextureGPU->createDrawableIntoColorTextureWithDepth(m_pContext->getGPUScreen()->getWidth(), m_pContext->getGPUScreen()->getHeight(), SamplerState_NoMips_MinTexelLerp_NoMagTexelLerp_Clamp);*/
  
-		m_2ndMirrorTargetTextureGPU.createDrawableIntoColorTextureWithDepth(m_pContext->getGPUScreen()->getWidth(), m_pContext->getGPUScreen()->getHeight(), SamplerState_NoMips_NoMinTexelLerp_NoMagTexelLerp_Clamp);
-		m_3rdMirrorTargetTextureGPU.createDrawableIntoColorTextureWithDepth(m_pContext->getGPUScreen()->getWidth(), m_pContext->getGPUScreen()->getHeight(), SamplerState_NoMips_NoMinTexelLerp_NoMagTexelLerp_Clamp);
+		m_MirrorTargetTextureGPU.createDrawableIntoColorTextureWithDepth(m_pContext->getGPUScreen()->getWidth(), m_pContext->getGPUScreen()->getHeight(), SamplerState_NoMips_NoMinTexelLerp_NoMagTexelLerp_Clamp);
+		m_ReflectionTargetTextureGPU.createDrawableIntoColorTextureWithDepth(m_pContext->getGPUScreen()->getWidth(), m_pContext->getGPUScreen()->getHeight(), SamplerState_NoMips_NoMinTexelLerp_NoMagTexelLerp_Clamp);
 
 		m_hGlowTargetTextureGPU = Handle("TEXTURE_GPU", sizeof(TextureGPU));
 		TextureGPU *pGlowTargetTextureGPU = new(m_hGlowTargetTextureGPU) TextureGPU(*m_pContext, m_arena);
@@ -275,6 +275,26 @@ namespace PE {
 	}
 
 	{
+
+		Handle hEffect("EFFECT", sizeof(Effect));
+		Effect* pEffect = new(hEffect) Effect(*m_pContext, m_arena, hEffect);
+		pEffect->loadTechnique(
+			"StdMesh_Shadowed_VS", "main",
+			NULL, NULL, // geometry shader
+			"StdMesh_Shadowed_A_0_PS", "main",
+			NULL, NULL, // compute shader
+			PERasterizerState_SolidTriBackCull,
+			PEDepthStencilState_ZBuffer, PEAlphaBlendState_NoBlend, // depth stencil, blend states
+			"StdMesh_Reflected_Tech");
+
+		pEffect->m_psInputFamily = EffectPSInputFamily::STD_MESH_PS_IN;
+		pEffect->m_effectDrawOrder = EffectDrawOrder::First;
+
+		m_map.add("StdMesh_Reflected_Tech", hEffect);
+
+	}
+
+	{
 		Handle hEffect("EFFECT", sizeof(Effect));
 		Effect *pEffect = new(hEffect) Effect(*m_pContext, m_arena, hEffect);
 		pEffect->loadTechnique(
@@ -467,6 +487,7 @@ namespace PE {
 	}
 
 	m_hMirrorEffect = getEffectHandle("StdMesh_Mirror_Tech");
+	m_hReflectionEffect = getEffectHandle("StdMesh_Reflected_Tech");
 
 	buildFullScreenBoard();
 

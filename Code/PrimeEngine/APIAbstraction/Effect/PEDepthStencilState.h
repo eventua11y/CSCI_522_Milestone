@@ -32,7 +32,7 @@ namespace PE {
         PEDepthStencilState_Count
     };
 
-    enum E_PEMirrorRenderState
+    enum E_PERenderState
     {
         FIRST_PASS,
         SECOND_PASS,
@@ -57,7 +57,7 @@ namespace PE {
         bool m_depthTestEnabled;
         bool m_stencilTestEnabled;
 
-        E_PEMirrorRenderState m_mirrorRenderState;
+        E_PERenderState m_RenderState;
         
         APICullModeType m_apiCullMode;
 #if APIABSTRACTION_D3D11

@@ -17,6 +17,7 @@
 #include "../Texture/Texture.h"
 #include "../GPUBuffers/VertexBufferGPU.h"
 #include "../GPUBuffers/IndexBufferGPU.h"
+//#include "PrimeEngine/Scene/RootSceneNode.h"
 
 // Sibling/Children includes
 #include "EffectEnums.h"
@@ -71,8 +72,9 @@ struct EffectManager : public PE::PEAllocatableAndDefragmentable
 		EffectManager::s_myHandle = handle;
 	}
 
-	void setTextureAndDepthTextureRenderTargetForGlow();
+	void setTextureAndDepthTextureRenderTargetForGlow(bool clearTarget, bool clearZbuffer);
 	void setTextureAndDepthTextureRenderTargetForMirror();
+	void setTextureAndDepthTextureRenderTargetForReflection();
 	void setTextureAndDepthTextureRenderTargetForDefaultRendering();
 
 	void set2ndGlowRenderTarget();
@@ -91,8 +93,8 @@ struct EffectManager : public PE::PEAllocatableAndDefragmentable
 	void drawMotionBlur();
 	void drawFrameBufferCopy();
 
-	void drawMirrorSecondPass();
-	void drawMirrorThirdPass();
+	void drawMirrorPass();
+	void drawReflectionPass();
 	
 
 	void debugDrawRenderTarget(bool drawGlowRenderTarget, bool drawSeparatedGlow, bool drawGlow1stPass, bool drawGlow2ndPass, bool drawShadowRenderTarget);
@@ -105,8 +107,8 @@ public:
 	StrToHandleMap m_map;
 
 	Handle m_hMirrorTargetTextureGPU;
-	TextureGPU m_2ndMirrorTargetTextureGPU;
-	TextureGPU m_3rdMirrorTargetTextureGPU;
+	TextureGPU m_MirrorTargetTextureGPU;
+	TextureGPU m_ReflectionTargetTextureGPU;
 
 	TextureGPU m_glowSeparatedTextureGPU;
 	Handle m_hGlowTargetTextureGPU;
@@ -138,6 +140,7 @@ public:
 	Handle m_hColoredMinimalMeshTech;
 
 	Handle m_hMirrorEffect;
+	Handle m_hReflectionEffect;
 
 	Array<Handle> m_pixelShaderSubstitutes;
 #	if APIABSTRACTION_D3D11
