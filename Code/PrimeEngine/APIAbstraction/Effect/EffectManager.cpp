@@ -642,8 +642,8 @@ void EffectManager::drawReflectionPass()
 		return;
 
 	// find mesh
-	RootSceneNode* proot = RootSceneNode::Instance();
-	Mesh* pMesh = proot->GetMeshForEffect("StdMesh_Reflected_Tech");
+	RootSceneNode* pRoot = RootSceneNode::Instance();
+	Mesh* pMesh = pRoot->GetMeshForEffect("StdMesh_Reflected_Tech");
 	if (!pMesh)
 		return;
 
@@ -681,6 +681,49 @@ void EffectManager::drawReflectionPass()
 	PE::Handle hSA("SA_Bind_Resource", sizeof(SA_Bind_Resource));
 	PE::Handle hSPMCSA("SetPerMaterialConstantsShaderAction", sizeof(SetPerMaterialConstantsShaderAction));
 	PE::Handle hSPOCSA("SetPerObjectConstantsShaderAction", sizeof(SetPerObjectConstantsShaderAction));
+
+	Handle hsvPerObjectGroup("SetPerObjectGroupConstantsShaderAction", sizeof(SetPerObjectGroupConstantsShaderAction));
+	SetPerObjectGroupConstantsShaderAction* psvPerObjectGroup = new(hsvPerObjectGroup) SetPerObjectGroupConstantsShaderAction(*m_pContext, m_arena);
+
+	// the light that drops shadows is defined by a boolean isShadowCaster in maya light objects
+	PrimitiveTypes::UInt32 iDestLight = 0;
+	// reflection matrix
+	Matrix4x4 Rxy(1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, -1, 0,
+		0, 0, 0, 1);
+	if (pRoot->m_lights.m_size)
+	{
+		for (PrimitiveTypes::UInt32 i = 0; i < (pRoot->m_lights.m_size); i++) {
+			Light* pLight = pRoot->m_lights[i].getObject<Light>();
+			if (pLight->castsShadow()) {
+				Matrix4x4 worldToView = pLight->m_worldToViewTransform;
+				Matrix4x4 lightProjectionViewWorldMatrix = (pLight->m_viewToProjectedTransform * worldToView);
+				psvPerObjectGroup->m_data.gLightWVP = lightProjectionViewWorldMatrix;
+
+				psvPerObjectGroup->m_data.gLights[iDestLight] = pLight->m_cbuffer;
+				
+				psvPerObjectGroup->m_data.gLights[iDestLight].pos = Rxy * psvPerObjectGroup->m_data.gLights[iDestLight].pos;
+				psvPerObjectGroup->m_data.gLights[iDestLight].dir = Rxy * psvPerObjectGroup->m_data.gLights[iDestLight].dir;
+
+				iDestLight++;
+
+				break;
+			}
+		}
+	}
+	for (PrimitiveTypes::UInt32 iLight = 0; iLight < pRoot->m_lights.m_size; iLight++)
+	{
+		Light* pLight = pRoot->m_lights[iLight].getObject<Light>();
+		if (pLight->castsShadow())
+			continue;
+		psvPerObjectGroup->m_data.gLights[iDestLight] = pLight->m_cbuffer;
+		psvPerObjectGroup->m_data.gLights[iDestLight].pos = Rxy * psvPerObjectGroup->m_data.gLights[iDestLight].pos;
+		psvPerObjectGroup->m_data.gLights[iDestLight].dir = Rxy * psvPerObjectGroup->m_data.gLights[iDestLight].dir;
+		iDestLight++;
+	}
+	
+	psvPerObjectGroup->bindToPipeline();
 
 	// Check for material set
 	if (!pMesh->m_hMaterialSetGPU.isValid())
@@ -881,7 +924,11 @@ void EffectManager::drawReflectionPass()
 						// TODO: Comptue reflection matrix
 						Vector3 worldPos;
 						worldPos = worldMatrix.getPos();
-						worldMatrix.setPos(Vector3(worldPos.m_x, worldPos.m_y, -worldPos.m_z));
+						Matrix4x4 Rxy(1, 0, 0, 0,
+							0, 1, 0, 0,
+							0, 0, -1, 0,
+							0, 0, 0, 1);
+						worldMatrix = Rxy * worldMatrix;
 
 						psvPerObject->m_data.gWVP = evtProjectionViewWorldMatrix * worldMatrix; // these values are only used by non-instance version
 						psvPerObject->m_data.gWVPInverse = psvPerObject->m_data.gWVP.inverse(); // these values are only used by non-instance version
@@ -939,95 +986,7 @@ void EffectManager::drawReflectionPass()
 	hSA.release();
 	hSPMCSA.release();
 	hSPOCSA.release();
-
-//	// effect
-//	
-//	curEffect.setCurrent(pvbGPU);
-//
-//	// texture
-//	GPUMaterialSet* pGpuMatSet = pMesh->m_hMaterialSetGPU.getObject<GPUMaterialSet>();
-//	PE::Handle hSV("SA_Bind_Resource", sizeof(SA_Bind_Resource));
-//	SA_Bind_Resource* pSetTextureAction = new(hSV) SA_Bind_Resource(*m_pContext, m_arena);
-//	for (int i = 0; i < pGpuMatSet->m_materials.m_size; i++)
-//	{
-//		GPUMaterial& curMat = pGpuMatSet->m_materials[i];
-//		for (PrimitiveTypes::UInt32 itex = 0; itex < curMat.m_textures.m_size; itex++)
-//		{
-//
-//			
-//			// create object referenced by Handle in DrawList
-//			// this handle will be released on end of draw call, os no need to worry about realeasing this object
-//			
-//
-//			//SA_Bind_Resource *pSetTextureAction;
-//			TextureGPU& curTex = *curMat.m_textures[itex].getObject<TextureGPU>();
-//			pSetTextureAction->set(
-//				DIFFUSE_TEXTURE_2D_SAMPLER_SLOT,
-//				curTex.m_samplerState,
-//#if APIABSTRACTION_D3D9
-//				curTex.m_pTexture,
-//#elif APIABSTRACTION_D3D11
-//				curTex.m_pShaderResourceView,
-//#elif APIABSTRACTION_OGL
-//				curTex.m_texture,
-//#elif PE_PLAT_IS_PSVITA
-//				curTex.m_texture,
-//#endif
-//				curTex.m_name
-//			);
-//			pSetTextureAction->bindToPipeline(&curEffect);
-//		}
-//	}
-//	
-//
-//	//TextureGPU* t = m_hGlowTargetTextureGPU.getObject<TextureGPU>();
-//	//PE::SA_Bind_Resource setTextureAction(*m_pContext, m_arena, DIFFUSE_TEXTURE_2D_SAMPLER_SLOT, t->m_samplerState, API_CHOOSE_DX11_DX9_OGL(t->m_pShaderResourceView, t->m_pTexture, t->m_texture));
-//	//setTextureAction.bindToPipeline(&curEffect);
-//
-//	// Per Object
-//
-//	PE::SetPerObjectConstantsShaderAction objSa;
-//
-//	MeshInstance* pInst = pMesh->m_instances[0].getObject<MeshInstance>();
-//
-//	//Handle& hsvPerObject = Handle("RAW_DATA", sizeof(SetPerObjectConstantsShaderAction));
-//	//SetPerObjectConstantsShaderAction* psvPerObject = new(hsvPerObject) SetPerObjectConstantsShaderAction();
-//
-//	//memset(&psvPerObject->m_data, 0, sizeof(SetPerObjectConstantsShaderAction::Data));
-//
-//	Handle hParentSN = pInst->getFirstParentByType<SceneNode>();
-//
-//	Matrix4x4& m_worldTransform = hParentSN.getObject<SceneNode>()->m_worldTransform;
-//
-//	Matrix4x4 worldMatrix = hParentSN.getObject<SceneNode>()->m_worldTransform;
-//
-//	CameraSceneNode* pcam = CameraManager::Instance()->getActiveCamera()->getCamSceneNode();
-//
-//	Matrix4x4 evtProjectionViewWorldMatrix = pcam->m_viewToProjectedTransform * pcam->m_worldToViewTransform;
-//
-//	Vector3 worldPos;
-//	worldPos = worldMatrix.getPos();
-//	worldMatrix.setPos(Vector3(worldPos.m_x, worldPos.m_y, -worldPos.m_z));
-//
-//	objSa.m_data.gWVP = evtProjectionViewWorldMatrix * worldMatrix; // these values are only used by non-instance version
-//	objSa.m_data.gWVPInverse = objSa.m_data.gWVP.inverse(); // these values are only used by non-instance version
-//
-//	objSa.m_data.gW = worldMatrix;  // these values are only used by non-instance version
-//	objSa.bindToPipeline(&curEffect);
-//
-//	//SetPerMaterialConstantsShaderAction* pSV = new(hSV) SetPerMaterialConstantsShaderAction();
-//
-//	//pSV->m_data.m_diffuse = m_diffuse;
-//	//pSV->m_data.gxyzVSpecular_w.asVector3Ref() = m_specular;
-//	//pSV->m_data.gxyzVEmissive_wVShininess.asVector3Ref() = m_emissive;
-//	//pSV->m_data.gxyzVEmissive_wVShininess.m_w = m_shininess;
-//	//pSV->m_data.m_xHasNrm_yHasSpec_zHasGlow_wHasDiff = m_xHasNrm_yHasSpec_zHasGlow_wHasDiff;
-//	pibGPU->draw(1, 0);
-//
-//	pSetTextureAction->unbindFromPipeline(&curEffect);
-//
-//	hSV.release();
-	
+	hsvPerObjectGroup.release();
 }
 
 void EffectManager::drawMotionBlur()
