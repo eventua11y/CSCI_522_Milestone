@@ -18,7 +18,85 @@
 
 namespace PE {
 
-void D3D9Renderer::setRenderTargetsAndViewportWithDepth(TextureGPU *pDestColorTex, TextureGPU *pDestDepthTex, bool clearRenderTarget, bool clearDepth)
+void D3D9Renderer::setRenderTargetsAndViewportWithDepth(TextureGPU* pDestColorTex, TextureGPU* pDestDepthTex, bool clearRenderTarget, bool clearDepth)
+{
+	// in DX9 hardware the depth texture is part of the same surface
+	// so we need to make sure we are using the same texture
+	assert(pDestColorTex == pDestDepthTex);
+
+	IDirect3DSurface9* pRenderTarget9;
+
+	if (pDestColorTex != 0)
+	{
+		// texture is used
+		// Set the render target to be our offscreen texture
+
+#if D3D9_USE_RENDER_TO_SURFACE
+#else
+		HRESULT hr;
+		hr = m_pD3D9Device->SetRenderTarget(0, pDestColorTex->m_pSurface);
+		assert(SUCCEEDED(hr));
+		hr = m_pD3D9Device->SetDepthStencilSurface(pDestColorTex->m_pDSSurface);
+		assert(SUCCEEDED(hr));
+
+#endif
+
+		m_pD3D9Device->SetViewport(&pDestColorTex->m_viewport);
+	}
+	else
+	{
+		// use the default device
+		pRenderTarget9 = m_pRenderTarget9;
+		HRESULT hr = m_pD3D9Device->SetRenderTarget(0, m_pRenderTarget9);
+		assert(SUCCEEDED(hr));
+		hr = m_pD3D9Device->SetDepthStencilSurface(m_pDepthStencil9);
+		assert(SUCCEEDED(hr));
+
+		D3DVIEWPORT9 vp;
+
+		vp.X = 0;
+		vp.Y = 0;
+		vp.Width = m_width;
+		vp.Height = m_height;
+		vp.MinZ = 0.0f;
+		vp.MaxZ = 1.0f;
+
+		hr = m_pD3D9Device->SetViewport(&vp);
+		assert(SUCCEEDED(hr));
+
+	}
+
+	//render debugging: chnage background color
+#if 0
+	static float red = 0.0f;
+	red += 0.001f;
+	if (red > 1.0f) red = 0.0f;
+	m_clearColor = D3DCOLOR_COLORVALUE(red, 0, 0, 0);
+	clearRenderTarget = true;
+#endif
+
+	if (clearRenderTarget)
+	{
+		HRESULT hr = m_pD3D9Device->Clear(0, NULL, D3DCLEAR_TARGET /*| D3DCLEAR_ZBUFFER*/, m_clearColor, 1.0f, 0);
+		assert(SUCCEEDED(hr));
+	}
+
+	if (clearDepth)
+	{
+		HRESULT hr = m_pD3D9Device->Clear(0, NULL, D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL, m_clearColor, 1.0f, 0);
+		assert(SUCCEEDED(hr));
+	}
+
+#if D3D9_USE_RENDER_TO_SURFACE
+	HRESULT hr = pDestColorTex->m_pRenderToSurface->BeginScene(pDestColorTex->m_pSurface, &pDestColorTex->m_viewport);
+	assert(SUCCEEDED(hr));
+#else
+	HRESULT hr = m_pD3D9Device->BeginScene();
+	assert(SUCCEEDED(hr));
+#endif
+}
+
+void D3D9Renderer::setRenderTargetsAndViewportWithDepth(TextureGPU *pDestColorTex, TextureGPU *pDestDepthTex, bool clearRenderTarget, bool clearDepth, bool clearStencil)
 {
 	// in DX9 hardware the depth texture is part of the same surface
 	// so we need to make sure we are using the same texture
@@ -83,7 +161,13 @@ void D3D9Renderer::setRenderTargetsAndViewportWithDepth(TextureGPU *pDestColorTe
 
 	if (clearDepth)
 	{
-		HRESULT hr = m_pD3D9Device->Clear(0, NULL, D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL, m_clearColor, 1.0f, 0);
+		HRESULT hr = m_pD3D9Device->Clear(0, NULL, D3DCLEAR_ZBUFFER /*| D3DCLEAR_STENCIL*/, m_clearColor, 1.0f, 0);
+		assert(SUCCEEDED(hr));
+	}
+
+	if (clearStencil)
+	{
+		HRESULT hr = m_pD3D9Device->Clear(0, NULL, /*D3DCLEAR_ZBUFFER |*/ D3DCLEAR_STENCIL, m_clearColor, 1.0f, 0);
 		assert(SUCCEEDED(hr));
 	}
 

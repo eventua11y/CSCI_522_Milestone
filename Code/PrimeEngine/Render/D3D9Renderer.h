@@ -38,8 +38,8 @@ struct TextureGPU;
 class D3D9Renderer : public IRenderer
 {
 public:
-	
-	virtual void setRenderTargetsAndViewportWithDepth(TextureGPU *pDestColorTex = 0, TextureGPU *pDestDepthTex = 0, bool clearRenderTargte = false, bool clearDepth = false);
+	virtual void setRenderTargetsAndViewportWithDepth(TextureGPU* pDestColorTex = 0, TextureGPU* pDestDepthTex = 0, bool clearRenderTargte = false, bool clearDepth = false);
+	virtual void setRenderTargetsAndViewportWithDepth(TextureGPU *pDestColorTex = 0, TextureGPU *pDestDepthTex = 0, bool clearRenderTargte = false, bool clearDepth = false, bool clearStencil = false);
 
 	virtual void setDepthStencilOnlyRenderTargetAndViewport(TextureGPU *pDestDepthTex, bool clear = false);
 

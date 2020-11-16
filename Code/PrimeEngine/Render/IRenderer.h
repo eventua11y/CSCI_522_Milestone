@@ -46,7 +46,8 @@ public:
 	void ReleaseRenderContextOwnership(int &threadOwnershipMask);
 
 	virtual void setRenderTargetsAndViewportWithNoDepth(TextureGPU *pDestColorTex = 0, bool clear = false) = 0;
-	virtual void setRenderTargetsAndViewportWithDepth(TextureGPU *pDestColorTex = 0, TextureGPU *pDestDepthTex = 0, bool clearRenderTargte = false, bool clearDepth = false) = 0;
+	virtual void setRenderTargetsAndViewportWithDepth(TextureGPU* pDestColorTex = 0, TextureGPU* pDestDepthTex = 0, bool clearRenderTargte = false, bool clearDepth = false) = 0;
+	virtual void setRenderTargetsAndViewportWithDepth(TextureGPU* pDestColorTex = 0, TextureGPU* pDestDepthTex = 0, bool clearRenderTargte = false, bool clearDepth = false, bool clearStencil = false) = 0;
 	virtual void setDepthStencilOnlyRenderTargetAndViewport(TextureGPU *pDestDepthTex, bool clear = false) = 0;
 
 	virtual void endRenderTarget(TextureGPU *pTex) = 0;

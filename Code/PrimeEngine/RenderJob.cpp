@@ -116,8 +116,7 @@ void runDrawThreadSingleFrame(PE::GameContext &ctx)
 	if (!disableScreenSpaceEffects)
     {
 		// set render target: GlowTargetTextureGPU
-		//EffectManager::Instance()->setTextureAndDepthTextureRenderTargetForReflection();
-		EffectManager::Instance()->setTextureAndDepthTextureRenderTargetForGlow(true, true);
+		EffectManager::Instance()->setTextureAndDepthTextureRenderTargetForGlow();
          
         assert(DrawList::InstanceReadOnly() != DrawList::Instance());
         DrawList::InstanceReadOnly()->optimize();
@@ -143,10 +142,12 @@ void runDrawThreadSingleFrame(PE::GameContext &ctx)
 		if (renderMirror)
 		{
 			// mirror pass
-			//EffectManager::Instance()->drawMirrorPass();
-			//EffectManager::Instance()->endCurrentRenderTarget();
+			EffectManager::Instance()->setTextureAndDepthTextureRenderTargetForMirror();
+			EffectManager::Instance()->drawMirrorPass();
+			EffectManager::Instance()->endCurrentRenderTarget();
 
 			// reflection pass
+			EffectManager::Instance()->setTextureAndDepthTextureRenderTargetForReflection();
 			EffectManager::Instance()->drawReflectionPass();
 			EffectManager::Instance()->endCurrentRenderTarget();
 		}

@@ -282,29 +282,38 @@ void EffectManager::endCurrentRenderTarget()
 	m_pCurRenderTarget = NULL;
 }
 
-void EffectManager::setTextureAndDepthTextureRenderTargetForGlow(bool clearTarget, bool clearZbuffer)
+void EffectManager::setTextureAndDepthTextureRenderTargetForGlow()
 {
-	m_pContext->getGPUScreen()->setRenderTargetsAndViewportWithDepth(m_hGlowTargetTextureGPU.getObject<TextureGPU>(), m_hGlowTargetTextureGPU.getObject<TextureGPU>(), clearTarget, clearZbuffer);
+	bool clearTarget = true;
+	bool clearDepth = true;
+	bool clearStencil = true;
+	m_pContext->getGPUScreen()->setRenderTargetsAndViewportWithDepth(m_hGlowTargetTextureGPU.getObject<TextureGPU>(), m_hGlowTargetTextureGPU.getObject<TextureGPU>(), clearTarget, clearDepth, clearStencil);
 	m_pCurRenderTarget = m_hGlowTargetTextureGPU.getObject<TextureGPU>();
 }
 
 void EffectManager::setTextureAndDepthTextureRenderTargetForMirror()
 {
-	m_pContext->getGPUScreen()->setRenderTargetsAndViewportWithDepth(&m_MirrorTargetTextureGPU, &m_MirrorTargetTextureGPU, true, true);
-	m_pCurRenderTarget = &m_MirrorTargetTextureGPU;
+	bool clearTarget = false;
+	bool clearDepth = false;
+	bool clearStencil = false;
+	m_pContext->getGPUScreen()->setRenderTargetsAndViewportWithDepth(m_hGlowTargetTextureGPU.getObject<TextureGPU>(), m_hGlowTargetTextureGPU.getObject<TextureGPU>(), clearTarget, clearDepth, clearStencil);
+	m_pCurRenderTarget = m_hGlowTargetTextureGPU.getObject<TextureGPU>();
 }
 
 void EffectManager::setTextureAndDepthTextureRenderTargetForReflection()
 {
-	m_pContext->getGPUScreen()->setRenderTargetsAndViewportWithDepth(&m_ReflectionTargetTextureGPU, &m_ReflectionTargetTextureGPU, true, true);
-	m_pCurRenderTarget = &m_ReflectionTargetTextureGPU;
+	bool clearTarget = false;
+	bool clearDepth = true;
+	bool clearStencil = false;
+	m_pContext->getGPUScreen()->setRenderTargetsAndViewportWithDepth(m_hGlowTargetTextureGPU.getObject<TextureGPU>(), m_hGlowTargetTextureGPU.getObject<TextureGPU>(), clearTarget, clearDepth, clearStencil);
+	m_pCurRenderTarget = m_hGlowTargetTextureGPU.getObject<TextureGPU>();
 }
 
 
 void EffectManager::setTextureAndDepthTextureRenderTargetForDefaultRendering()
 {
 	// use device back buffer and depth
-	m_pContext->getGPUScreen()->setRenderTargetsAndViewportWithDepth(0, 0, true, true);
+	m_pContext->getGPUScreen()->setRenderTargetsAndViewportWithDepth(0, 0, true, true, true);
 }
 
 
@@ -510,8 +519,119 @@ void EffectManager::drawSecondGlowPass()
 void EffectManager::drawMirrorPass()
 {
 	
+	Effect& curEffect = *m_hMirrorEffect.getObject<Effect>();
 
+	if (!curEffect.m_isReady)
+		return;
 
+	// find mesh
+	RootSceneNode* proot = RootSceneNode::Instance();
+	Mesh* pMesh = proot->GetMeshForEffect("StdMesh_Mirror_Tech");
+	if (!pMesh)
+		return;
+
+	// index buffer
+	Handle hIBuf = pMesh->m_hIndexBufferGPU;
+	IndexBufferGPU* pibGPU = hIBuf.getObject<IndexBufferGPU>();
+	pibGPU->setAsCurrent();
+
+	VertexBufferGPU* pvbGPU;
+	pvbGPU = pMesh->m_vertexBuffersGPUHs[0].getObject<VertexBufferGPU>();
+	pvbGPU->setAsCurrent(&curEffect);
+
+	// effect
+	curEffect.setCurrent(pvbGPU);
+	// TODO: set blend and stencil state
+	D3D9Renderer* pD3D9Renderer = static_cast<D3D9Renderer*>(m_pContext->getGPUScreen());
+	LPDIRECT3DDEVICE9 pDevice = pD3D9Renderer->m_pD3D9Device;
+
+	// enable the stencil buffer
+	pDevice->SetRenderState(D3DRS_STENCILENABLE, true);
+	pDevice->SetRenderState(D3DRS_STENCILFUNC, D3DCMP_ALWAYS);
+	pDevice->SetRenderState(D3DRS_STENCILREF, 0x1);
+	pDevice->SetRenderState(D3DRS_STENCILMASK, 0xffffffff);
+	pDevice->SetRenderState(D3DRS_STENCILWRITEMASK, 0xffffffff);
+	pDevice->SetRenderState(D3DRS_STENCILZFAIL, D3DSTENCILOP_KEEP);
+	pDevice->SetRenderState(D3DRS_STENCILFAIL, D3DSTENCILOP_KEEP);
+	pDevice->SetRenderState(D3DRS_STENCILPASS, D3DSTENCILOP_REPLACE);
+
+	// disable writes to the depth and color
+	pDevice->SetRenderState(D3DRS_ZWRITEENABLE, false);
+	pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, true);
+	pDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ZERO);
+	pDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+
+	// handles
+	PE::Handle hSA("SA_Bind_Resource", sizeof(SA_Bind_Resource));
+	PE::Handle hSPMCSA("SetPerMaterialConstantsShaderAction", sizeof(SetPerMaterialConstantsShaderAction));
+	PE::Handle hSPOCSA("SetPerObjectConstantsShaderAction", sizeof(SetPerObjectConstantsShaderAction));
+
+	// texture
+	GPUMaterialSet* pGpuMatSet = pMesh->m_hMaterialSetGPU.getObject<GPUMaterialSet>();
+	SA_Bind_Resource* pSetTextureAction = new(hSA) SA_Bind_Resource(*m_pContext, m_arena);
+	GPUMaterial& curMat = pGpuMatSet->m_materials[0];
+	TextureGPU& curTex = *curMat.m_textures[0].getObject<TextureGPU>();
+	pSetTextureAction->set(
+		DIFFUSE_TEXTURE_2D_SAMPLER_SLOT,
+		curTex.m_samplerState,
+#if APIABSTRACTION_D3D9
+		curTex.m_pTexture,
+#elif APIABSTRACTION_D3D11
+		curTex.m_pShaderResourceView,
+#elif APIABSTRACTION_OGL
+		curTex.m_texture,
+#elif PE_PLAT_IS_PSVITA
+		curTex.m_texture,
+#endif
+		curTex.m_name
+	);
+	pSetTextureAction->bindToPipeline(&curEffect);
+
+	// Per Object Shader Action
+
+	SetPerObjectConstantsShaderAction* psvPerObject = new(hSPOCSA) SetPerObjectConstantsShaderAction();
+	memset(&psvPerObject->m_data, 0, sizeof(SetPerObjectConstantsShaderAction::Data));
+
+	MeshInstance* pInst = pMesh->m_instances[0].getObject<MeshInstance>();
+	Handle hParentSN = pInst->getFirstParentByType<SceneNode>();
+	Matrix4x4& m_worldTransform = hParentSN.getObject<SceneNode>()->m_worldTransform;
+	Matrix4x4 worldMatrix = hParentSN.getObject<SceneNode>()->m_worldTransform;
+	CameraSceneNode* pcam = CameraManager::Instance()->getActiveCamera()->getCamSceneNode();
+	Matrix4x4 evtProjectionViewWorldMatrix = pcam->m_viewToProjectedTransform * pcam->m_worldToViewTransform;
+
+	//Vector3 worldPos;
+	//worldPos = worldMatrix.getPos();
+	//worldMatrix.setPos(Vector3(0, 0, 1));
+
+	psvPerObject->m_data.gWVP = evtProjectionViewWorldMatrix * worldMatrix; // these values are only used by non-instance version
+	psvPerObject->m_data.gWVPInverse = psvPerObject->m_data.gWVP.inverse(); // these values are only used by non-instance version
+	psvPerObject->m_data.gW = worldMatrix;  // these values are only used by non-instance version
+	
+	psvPerObject->bindToPipeline(&curEffect);
+
+	// Per Material Shader Action
+
+	SetPerMaterialConstantsShaderAction* pSV = new(hSPMCSA) SetPerMaterialConstantsShaderAction();
+
+	pSV->m_data.m_diffuse = curMat.m_diffuse;
+	pSV->m_data.gxyzVSpecular_w.asVector3Ref() = curMat.m_specular;
+	pSV->m_data.gxyzVEmissive_wVShininess.asVector3Ref() = curMat.m_emissive;
+	pSV->m_data.gxyzVEmissive_wVShininess.m_w = curMat.m_shininess;
+	pSV->m_data.m_xHasNrm_yHasSpec_zHasGlow_wHasDiff = curMat.m_xHasNrm_yHasSpec_zHasGlow_wHasDiff;
+	
+	pSV->bindToPipeline(&curEffect);
+
+	// draw the mirror
+	pibGPU->draw(0, 1, 0);
+
+	pSetTextureAction->unbindFromPipeline();
+
+	hSA.release();
+	hSPMCSA.release();
+	hSPOCSA.release();
+
+	// re-enable depth writes
+	pDevice->SetRenderState(D3DRS_ZWRITEENABLE, true);
 
 }
 void EffectManager::drawReflectionPass()
@@ -520,8 +640,6 @@ void EffectManager::drawReflectionPass()
 	Effect& curEffect = *m_hReflectionEffect.getObject<Effect>();
 	if (!curEffect.m_isReady)
 		return;
-
-	EffectManager::Instance()->setTextureAndDepthTextureRenderTargetForGlow(false, false);
 
 	// find mesh
 	RootSceneNode* proot = RootSceneNode::Instance();
@@ -684,6 +802,20 @@ void EffectManager::drawReflectionPass()
 
 					pEffect->setCurrent(pvbGPU);
 
+					D3D9Renderer* pD3D9Renderer = static_cast<D3D9Renderer*>(m_pContext->getGPUScreen());
+					LPDIRECT3DDEVICE9 pDevice = pD3D9Renderer->m_pD3D9Device;
+
+					// only pass when inside the mirror
+					pDevice->SetRenderState(D3DRS_STENCILFUNC, D3DCMP_EQUAL);
+					pDevice->SetRenderState(D3DRS_STENCILPASS, D3DSTENCILOP_KEEP);
+
+					// "in" the mirror effect
+					pDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_DESTCOLOR);
+					pDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ZERO);
+
+					// change winding
+					pDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CW);
+
 					// shader actions
 					for (PrimitiveTypes::UInt32 itex = 0; itex < curMat.m_textures.m_size; itex++)
 					{
@@ -746,6 +878,7 @@ void EffectManager::drawReflectionPass()
 
 						Matrix4x4 worldMatrix = hParentSN.getObject<SceneNode>()->m_worldTransform;
 
+						// TODO: Comptue reflection matrix
 						Vector3 worldPos;
 						worldPos = worldMatrix.getPos();
 						worldMatrix.setPos(Vector3(worldPos.m_x, worldPos.m_y, -worldPos.m_z));
@@ -787,14 +920,20 @@ void EffectManager::drawReflectionPass()
 				}	// for each bone segment (if no bone segment, just run the code once, for a non skinned mesh)
 
 				iSrcInstance = iSrcInstanceInBoneSegment + 1;
-				//pLodibGPU->draw(1, 0);
 				pLodibGPU->draw(iRange, 1, 0);
-				//pSetTextureAction->unbindFromPipeline(&curEffect);
 
 			}
 		}	// loop through all effects for this iRange
 
 	}
+
+	// clean up
+	D3D9Renderer* pD3D9Renderer = static_cast<D3D9Renderer*>(m_pContext->getGPUScreen());
+	LPDIRECT3DDEVICE9 pDevice = pD3D9Renderer->m_pD3D9Device;
+
+	pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, false);
+	pDevice->SetRenderState(D3DRS_STENCILENABLE, false);
+	pDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
 	
 
 	hSA.release();
@@ -993,7 +1132,7 @@ void EffectManager::debugDrawRenderTarget(bool drawGlowRenderTarget, bool drawSe
 		return;
 	
 #	if APIABSTRACTION_D3D9
-	m_pContext->getGPUScreen()->setRenderTargetsAndViewportWithDepth(0, 0, true, true);
+	m_pContext->getGPUScreen()->setRenderTargetsAndViewportWithDepth(0, 0, true, true, true);
 	// this is called in function above: IRenderer::Instance()->getDevice()->BeginScene();
 #elif APIABSTRACTION_OGL
 	m_pContext->getGPUScreen()->setRenderTargetsAndViewportWithDepth(0, 0, true, true);

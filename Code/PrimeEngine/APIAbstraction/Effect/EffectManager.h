@@ -72,7 +72,7 @@ struct EffectManager : public PE::PEAllocatableAndDefragmentable
 		EffectManager::s_myHandle = handle;
 	}
 
-	void setTextureAndDepthTextureRenderTargetForGlow(bool clearTarget, bool clearZbuffer);
+	void setTextureAndDepthTextureRenderTargetForGlow();
 	void setTextureAndDepthTextureRenderTargetForMirror();
 	void setTextureAndDepthTextureRenderTargetForReflection();
 	void setTextureAndDepthTextureRenderTargetForDefaultRendering();
